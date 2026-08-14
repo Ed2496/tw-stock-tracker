@@ -50,16 +50,30 @@ export default function Sync() {
           <p className="micro-label mb-1">DATA PIPELINE · FINMIND → DATABASE</p>
           <h1 className="text-2xl font-bold tracking-tight">同步狀態</h1>
           <p className="mt-1 text-[13px] text-muted-foreground">
-            伺服器啟動時自動補齊缺口，並於台北時間平日 15:30、19:30 自動抓取當日行情與三大法人買賣超，逐日寫入資料庫。
+            伺服器啟動時自動補齊缺口，並於台北時間每日 21:10 自動抓取當日行情與三大法人買賣超，逐日累積寫入資料庫（只增不刪）。
           </p>
         </div>
-        <button
-          onClick={() => syncNow.mutate()}
-          disabled={syncNow.isPending}
-          className="rounded-md bg-[#00d9a3] px-4 py-2 text-[13px] font-bold text-black transition-opacity hover:opacity-90 disabled:opacity-40"
-        >
-          {syncNow.isPending ? "同步中…" : "立即同步"}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => syncNow.mutate()}
+            disabled={syncNow.isPending}
+            className="rounded-md bg-[#00d9a3] px-4 py-2 text-[13px] font-bold text-black transition-opacity hover:opacity-90 disabled:opacity-40"
+          >
+            {syncNow.isPending ? "同步中…" : "立即同步"}
+          </button>
+          <a
+            href="/api/backup.csv"
+            download
+            className="rounded-md border border-[#00d9a3] px-4 py-2 text-[13px] font-bold text-[#00d9a3] transition-colors hover:bg-[#00d9a3]/10"
+          >
+            下載資料庫（CSV）
+          </a>
+        </div>
+      </div>
+
+      <div className="surface px-4 py-3 text-[13px] leading-relaxed text-muted-foreground">
+        <span className="mr-2 font-bold text-foreground">每日備份說明</span>
+        所有數據都累積保存在雲端資料庫中，不會因重新整理或版本更新而消失。「下載資料庫（CSV）」會把目前完整資料庫（股票清單＋全部每日紀錄）匯出存到您的本機，建議每日 21:10 自動更新完成後點一次即可取得最新備份；檔案可用 Excel 直接開啟（已含 BOM 避免中文亂碼）。
       </div>
 
       {syncNow.data && (
