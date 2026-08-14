@@ -5,6 +5,10 @@ import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { appRouter } from "./router";
 import { createContext } from "./context";
 import { env } from "./lib/env";
+import { startScheduler } from "./services/scheduler";
+
+// 啟動每日自動蒐集排程（開機補齊缺口 + 台北平日 15:30 / 19:30）
+startScheduler();
 
 const app = new Hono<{ Bindings: HttpBindings }>();
 
