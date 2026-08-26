@@ -25,10 +25,10 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
-      - name: 安裝依賴
-        run: npm ci
+      - name: 安裝依賴（含重試，避免 npm 偶發錯誤）
+        run: npm ci || (sleep 10 && npm ci) || (sleep 30 && npm ci)
 
       - name: 抓取 FinMind 資料（增量更新 public/data）
         run: node scripts/fetch-data.mjs
