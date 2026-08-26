@@ -28,12 +28,8 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: 安裝依賴（升級 npm 避開 10.9.x 當機 bug，含重試）
-        run: |
-          npm i -g npm@latest
-          npm ci --ignore-scripts --no-audit --no-fund || \
-            (sleep 10 && npm ci --ignore-scripts --no-audit --no-fund) || \
-            (sleep 30 && npm ci --ignore-scripts --no-audit --no-fund)
+      - name: 安裝依賴（含重試，避免 npm 偶發錯誤）
+        run: npm ci --no-audit --no-fund || (sleep 10 && npm ci --no-audit --no-fund) || (sleep 30 && npm ci --no-audit --no-fund)
 
       - name: 抓取 FinMind 資料（增量更新 public/data）
         run: node scripts/fetch-data.mjs
