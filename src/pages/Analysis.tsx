@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
-import { trpc } from "@/providers/trpc";
 import MiniChart, { axisStyle, tooltipStyle } from "@/components/MiniChart";
 import { fmt, fmtPct, fmtPrice, SERIES_COLORS } from "@/lib/format";
-import type { DailyRecord } from "@db/schema";
+import { type Row } from "@/lib/data";
+import { useSource } from "@/lib/useSource";
 
 function StatCard({
   label,
@@ -49,31 +49,27 @@ function histogram(values: number[], buckets = 15) {
   };
 }
 
-function cumulative(rows: DailyRecord[], key: "foreignNet" | "trustNet" | "dealerNet" | "totalNet") {
+function cumulative(rows: Row[], key: "foreignNet" | "trustNet" | "dealerNet" | "totalNet") {
   let s = 0;
   return rows.map((r) => (s += r[key] ?? 0));
 }
 
 export default function Analysis() {
-  const list = trpc.stock.list.useQuery();
+  const src = useSource();
+  const list = src.useList();
   const stocks = list.data ?? [];
+
   const [stockId, setStockId] = useState<string | null>(null);
   const [range, setRange] = useState<{ start?: string; end?: string }>({});
   const current = stockId ?? stocks[0]?.stockId;
 
-  const stats = trpc.stock.stats.useQuery(
-    { stockId: current!, ...range },
-    { enabled: !!current },
-  );
-  const records = trpc.stock.records.useQuery(
-    { stockId: current!, ...range },
-    { enabled: !!current },
-  );
-  const rows = records.data ?? [];
+  const stats = src.useStats(current, range.start, range.end);
+  const recQ = src.useRecords(current, range.start, range.end);
+  const allQ = src.useRecords(current);
 
-  // 快速區間按鈕需要「全量日期」回推起點，與目前篩選無關
-  const all = trpc.stock.records.useQuery({ stockId: current! }, { enabled: !!current });
-  const allDates = useMemo(() => (all.data ?? []).map((r) => r.date), [all.data]);
+  const rows: Row[] = recQ.data ?? [];
+  const allData: Row[] = allQ.data ?? [];
+  const allDates = useMemo(() => allData.map((r) => r.date), [allData]);
   const [quick, setQuick] = useState<number | null>(null);
   const applyQuick = (n: number | null) => {
     setQuick(n);

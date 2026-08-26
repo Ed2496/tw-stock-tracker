@@ -6,9 +6,13 @@ import { defineConfig } from "vite"
 import { inspectAttr } from 'kimi-plugin-inspect-react'
 
 // https://vite.dev/config/
+const isStatic = process.env.VITE_STATIC_DATA === "1";
+
 export default defineConfig({
+  // GitHub Pages 部署在 /<repo>/ 子路徑；靜態建置時使用相對路徑
+  base: isStatic ? "./" : "/",
   plugins: [
-    devServer({ entry: "api/boot.ts", exclude: [/^\/(?!api\/).*$/] }),
+    ...(isStatic ? [] : [devServer({ entry: "api/boot.ts", exclude: [/^\/(?!api\/).*$/] })]),
     inspectAttr(), react()],
   server: {
     port: 3000,

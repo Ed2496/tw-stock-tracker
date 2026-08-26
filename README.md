@@ -1,174 +1,35 @@
-# Vortex Portfolio Template
+# 台股法人籌碼追蹤
 
-A single-page photography / portfolio site built around a swirling cylindrical vortex of images rendered on WebGL. Clicking the central image — or any image in the background — zooms it up into a fullscreen detail overlay with a per-image caption. Includes a second route (`/info`) with a bio + contact layout.
+台積電（2330）、聯發科（2454）、台達電（2308）的日價格 × 三大法人買賣淨額追蹤，附離線歷史分析。
 
-## Features
+## 兩種部署模式
 
-- WebGL cylindrical image vortex (Three.js + custom instanced shaders, atlas-packed textures)
-- Smooth scroll driven by Lenis; wheel drives the vortex rotation / z-flow
-- Clickable images with a zoomed-in detail overlay (fade + scale-in, ESC / click-outside to close)
-- Second route `/info` with a two-column bio + sticky contact layout
-- Fully config-driven: all text and images live in `src/config.ts`
+| 模式 | 說明 | 資料更新 |
+|------|------|----------|
+| **GitHub Pages（本 repo 自動部署）** | 純靜態網站，直接讀取 `public/data/*.json` | GitHub Actions 每日台北時間 21:10 自動抓 FinMind 資料並更新 |
+| **Kimi 全端版** | 含後端 API + MySQL 資料庫、手動同步、同步日誌、CSV 備份下載 | 伺服器排程自動寫入資料庫 |
 
-## Tech Stack
+## GitHub Pages 版運作方式
 
-- React 19 + TypeScript + Vite
-- Tailwind CSS v3 (utilities only, not heavily used in this template)
-- Three.js for WebGL, GSAP interpolation, Lenis smooth scroll
-- `react-router` v7 for client routing
-- shadcn/ui component kit is present in `src/components/ui/` (unused by default)
+1. `scripts/fetch-data.mjs`：從 FinMind（資料原始於台灣證券交易所公開資訊）增量抓取行情與三大法人買賣超，輸出到 `public/data/*.json`（以「張」為單位，淨額＝買進 − 賣出）
+2. `.github/workflows/daily-update.yml`：每日 21:10（台北）執行抓資料 → commit 回 repo → 靜態建置 → 部署到 Pages；也可在 Actions 頁手動觸發（workflow_dispatch）
+3. 前端以 `VITE_STATIC_DATA=1 vite build` 建置成靜態站，使用 HashRouter 與相對路徑，直接讀取同站的 JSON
 
-## Quick Start
+### 開啟 GitHub Pages（首次手動設定一次）
 
-1. Clone this repository
-2. Install dependencies: `npm install`
-3. Edit `src/config.ts` with your content
-4. Add images to `public/images/`
-5. Run dev server: `npm run dev`
-6. Build for production: `npm run build`
+Repo → **Settings → Pages → Build and deployment → Source 選「GitHub Actions」**。
+之後每日 workflow 會自動發佈到 `https://<帳號>.github.io/tw-stock-tracker/`。
 
-## Configuration
-
-All content is configured in `src/config.ts`.
-
-### `siteConfig`
-
-```typescript
-export const siteConfig: SiteConfig = {
-  language: "",     // BCP-47 language code, e.g. "en", "zh-CN". Leave empty to inherit.
-  brandName: "",    // Logo in top-left on both pages. ~14 chars max to stay on one line.
-  copyright: "",    // Centered at bottom of home, end of info page. e.g. "© 2026 Studio Name"
-};
-```
-
-### `navigationConfig`
-
-```typescript
-export const navigationConfig: NavigationConfig = {
-  infoLinkLabel: "", // Top-right link on home that routes to /info. e.g. "Info", "About"
-};
-```
-
-### `infoPageConfig`
-
-The `/info` sub-page.
-
-```typescript
-export const infoPageConfig: InfoPageConfig = {
-  backLinkLabel: "",     // Top-right link that routes home. e.g. "Back", "Home"
-  eyebrow: "",           // Small uppercase lead-in above the title
-  title: "",             // Large serif heading
-  paragraphs: [],        // Bio paragraphs in order. Recommended 2-4.
-  contactLabel: "",      // Uppercase eyebrow above the contact list, e.g. "Contact"
-  contactEntries: [],    // Array of { label, value, href? }
-};
-```
-
-Each `contactEntries` entry:
-
-```typescript
-{
-  label: "Email",                     // left column, muted
-  value: "hello@example.com",         // right column; "\n" renders as <br>
-  href: "mailto:hello@example.com",   // optional; makes value clickable
-}
-```
-
-### `overlayConfig`
-
-Labels used inside the clicked-image detail overlay.
-
-```typescript
-export const overlayConfig: OverlayConfig = {
-  frameDetailLabel: "",  // Appended after the image's category in the eyebrow
-  fileLabel: "",         // Left label in the meta strip for the file name
-  seriesLabel: "",       // Left label in the meta strip for the series name
-  closeLabel: "",        // Text on the close button below the description
-};
-```
-
-### `galleryConfig`
-
-All images shown in the vortex AND in the detail overlay.
-
-```typescript
-export const galleryConfig: GalleryConfig = {
-  images: [
-    {
-      src: "/images/portrait_01.jpg",
-      category: "Portrait",
-      title: "Strangers — No. 01",
-      description: "...",
-    },
-  ],
-};
-```
-
-## Required Images
-
-Put images in `public/images/`. The vortex fills a cylindrical field with 600 instances pulling randomly from your image list, so roughly 20-60 images produces a full-looking vortex. Fewer images means more repetition in the background but the page still works with as few as 1.
-
-Recommended specs:
-- 4:5 portrait orientation works best for the cylinder cells (256×320 atlas cell)
-- JPG, ~1600px on the long edge (high-res is used in the detail overlay zoom)
-- Avoid pure white backgrounds — the page background is white
-
-## Design
-
-**Colors:**
-- Background: `#ffffff`
-- Text: `#000000`
-- Overlay: `rgba(10,10,10,0.94)` with backdrop-blur
-
-**Fonts:**
-- Display / headings: `'Times New Roman', serif`
-- Body / UI: `system-ui, -apple-system, sans-serif`
-- Meta strip file name: monospace
-
-**Animations / effects:**
-- Instanced GLSL vortex — z-flow modulus looping, per-lane speed variation, scroll-velocity driven rotation
-- Center plane shows the currently-scrolled image, texture updates every frame
-- Overlay animates opacity + scale-in (0.35s ease)
-- Lenis smooth scroll chains into the vortex's wheel handler
-
-## Build
+### 本機指令
 
 ```bash
-npm run build
+node scripts/fetch-data.mjs   # 抓/更新資料到 public/data
+npm run build:static          # 建置靜態版（dist/public）
+npm run dev                   # 全端開發模式（需 .env 的 DATABASE_URL）
 ```
 
-Output goes to `dist/`.
+## 資料欄位
 
-## Project Structure
+`public/data/<stockId>.json` → `rows[]`：`date, open, high, low, close, volume（張）, foreignNet, trustNet, dealerNet, totalNet（皆為張）`。
 
-```
-7-vortex-gallery-frontend/
-├── README.md
-├── package.json
-├── index.html
-├── vite.config.ts
-├── tailwind.config.js
-├── public/
-│   └── images/              # user-supplied photographs
-└── src/
-    ├── config.ts            # ⭐ all content goes here
-    ├── main.tsx
-    ├── App.tsx              # routes: / and /info
-    ├── index.css
-    ├── pages/
-    │   ├── Home.tsx         # vortex + overlay
-    │   └── Info.tsx         # bio + contact
-    ├── components/
-    │   ├── ImageDetailOverlay.tsx
-    │   └── ui/              # shadcn components (unused by default)
-    ├── lib/
-    │   ├── VortexGallery.ts # WebGL vortex (logic, no content)
-    │   └── utils.ts
-    └── hooks/
-```
-
-## Notes
-
-- Don't modify component files unless fixing a bug — all content lives in `src/config.ts`
-- If `galleryConfig.images` is empty, `Home` renders `null`; same for `Info` when its fields are all empty
-- The vortex's WebGL shader math is fragile; avoid tweaking `src/lib/VortexGallery.ts` unless you know what you're changing
+> 資料僅供研究參考，非投資建議。

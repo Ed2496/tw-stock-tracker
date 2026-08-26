@@ -1,10 +1,12 @@
-import { trpc } from "@/providers/trpc";
-import type { Stock } from "@db/schema";
 import StockChart from "@/components/StockChart";
 import { fmt, fmtPct, fmtPrice, signCls } from "@/lib/format";
+import { IS_STATIC } from "@/lib/data";
+import { useSource } from "@/lib/useSource";
+import type { ListItem } from "@/lib/source";
 
-function SummaryRow({ stock }: { stock: Stock }) {
-  const q = trpc.stock.stats.useQuery({ stockId: stock.stockId });
+function SummaryRow({ stock }: { stock: ListItem }) {
+  const src = useSource();
+  const q = src.useStats(stock.stockId);
   const s = q.data;
   if (q.isLoading) {
     return (
@@ -44,8 +46,9 @@ function SummaryRow({ stock }: { stock: Stock }) {
   );
 }
 
-function StockCard({ stock }: { stock: Stock }) {
-  const q = trpc.stock.records.useQuery({ stockId: stock.stockId });
+function StockCard({ stock }: { stock: ListItem }) {
+  const src = useSource();
+  const q = src.useRecords(stock.stockId);
   const rows = q.data ?? [];
   const first = rows[0];
   const last = rows[rows.length - 1];
@@ -84,17 +87,18 @@ function StockCard({ stock }: { stock: Stock }) {
         <div className="flex h-[560px] items-center justify-center text-muted-foreground">圖表載入中…</div>
       ) : rows.length === 0 ? (
         <div className="flex h-[200px] items-center justify-center text-muted-foreground">
-          尚無資料，請至「同步狀態」頁手動同步
+          尚無資料
         </div>
       ) : (
-        <StockChart rows={rows} />
+        <StockChart rows={rows as never} />
       )}
     </section>
   );
 }
 
 export default function Dashboard() {
-  const list = trpc.stock.list.useQuery();
+  const src = useSource();
+  const list = src.useList();
   const stocks = list.data ?? [];
   const dates = stocks.map((s) => s.last?.date).filter(Boolean) as string[];
   const latest = dates.sort().at(-1);
@@ -112,7 +116,7 @@ export default function Dashboard() {
         </div>
         <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
           <span className="inline-block h-2 w-2 rounded-full bg-[#00d9a3]" />
-          每日自動同步至資料庫
+          {IS_STATIC ? "GitHub Actions 每日自動更新" : "每日自動同步至資料庫"}
         </div>
       </div>
 

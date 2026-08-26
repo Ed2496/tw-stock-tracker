@@ -1,0 +1,61 @@
+name: 每日更新數據並部署
+
+on:
+  schedule:
+    # 台北時間每日 21:10（= UTC 13:10）抓取當日盤後資料
+    - cron: "10 13 * * *"
+  # 允許在 Actions 頁手動觸發
+  workflow_dispatch:
+
+permissions:
+  contents: write   # 把更新後的資料檔 commit 回 repo
+  pages: write      # 部署到 GitHub Pages
+  id-token: write
+
+# 同一時間只跑一個，避免同時 commit 衝突
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  fetch-build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: 安裝依賴
+        run: npm ci
+
+      - name: 抓取 FinMind 資料（增量更新 public/data）
+        run: node scripts/fetch-data.mjs
+
+      - name: 提交更新的資料檔
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/data
+          if git diff --cached --quiet; then
+            echo "無新資料，略過 commit"
+          else
+            git commit -m "chore(data): 每日資料更新 $(date -u +%Y-%m-%d)"
+            git push
+          fi
+
+      - name: 靜態建置（讀取本地 JSON）
+        run: npm run build:static
+
+      - name: 設定 Pages
+        uses: actions/configure-pages@v5
+
+      - name: 打包 Pages 產物
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/public
+
+      - name: 部署到 GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

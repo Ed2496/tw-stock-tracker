@@ -1,5 +1,6 @@
 import { trpc } from "@/providers/trpc";
 import { fmt, signCls } from "@/lib/format";
+import { IS_STATIC } from "@/lib/data";
 
 const triggerLabel: Record<string, string> = {
   cron: "排程",
@@ -28,7 +29,30 @@ function fmtTime(d: Date | string | null | undefined) {
   return dt.toLocaleString("zh-TW", { timeZone: "Asia/Taipei", hour12: false });
 }
 
-export default function Sync() {
+// 靜態部署（GitHub Pages）沒有後端與資料庫，顯示唯讀說明（不呼叫任何 tRPC hook）
+function StaticSync() {
+  return (
+    <div className="space-y-6">
+      <div>
+        <p className="micro-label mb-1">DATA PIPELINE · GITHUB ACTIONS</p>
+        <h1 className="text-2xl font-bold tracking-tight">同步狀態</h1>
+      </div>
+      <div className="surface px-4 py-4 text-[13.5px] leading-relaxed text-[#d1d5db]">
+        <p className="mb-2 font-bold text-[#00d9a3]">此為 GitHub Pages 靜態部署版本</p>
+        <p>
+          資料由 GitHub Actions 每日台北時間 21:10 自動從 FinMind 抓取並更新到儲存庫，
+          本站直接讀取儲存庫內的 JSON 檔，無獨立資料庫、也無法手動同步。
+          更新紀錄請至 GitHub 儲存庫的 <b>Actions</b> 分頁查看。
+        </p>
+        <p className="mt-2 text-muted-foreground">
+          需要手動同步、同步日誌與完整資料庫功能，請使用 Kimi 平台上的全端版本。
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function LiveSync() {
   const utils = trpc.useUtils();
   const list = trpc.stock.list.useQuery();
   const logs = trpc.sync.logs.useQuery(undefined, { refetchInterval: 15000 });
@@ -136,4 +160,8 @@ export default function Sync() {
       </div>
     </div>
   );
+}
+
+export default function Sync() {
+  return IS_STATIC ? <StaticSync /> : <LiveSync />;
 }
