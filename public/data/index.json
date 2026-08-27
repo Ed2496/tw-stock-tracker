@@ -1,23 +1,23 @@
 {
-  "generated": "2026-08-26",
+  "generated": "2026-08-28",
   "stocks": [
     {
       "stockId": "2330",
       "name": "台積電",
-      "lastDate": "2026-08-26",
-      "days": 81
+      "lastDate": "2026-08-27",
+      "days": 82
     },
     {
       "stockId": "2454",
       "name": "聯發科",
-      "lastDate": "2026-08-26",
-      "days": 81
+      "lastDate": "2026-08-27",
+      "days": 82
     },
     {
       "stockId": "2308",
       "name": "台達電",
-      "lastDate": "2026-08-26",
-      "days": 81
+      "lastDate": "2026-08-27",
+      "days": 82
     }
   ]
 }
